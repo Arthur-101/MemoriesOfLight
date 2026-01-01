@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky: Constellations of Memory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfj-_tfUxmEk6COpVejaPmULkI8PhuOqU",
+            authDomain: "memoriesoflight-8cfa5.firebaseapp.com",
+            projectId: "memoriesoflight-8cfa5",
+            storageBucket: "memoriesoflight-8cfa5.firebasestorage.app",
+            messagingSenderId: "475651062020",
+            appId: "1:475651062020:web:0a53aab37d691e069bf851",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.firestore = {
+            db,
+            collection,
+            addDoc,
+            onSnapshot,
+            serverTimestamp,
+            query,
+            orderBy
+        };
+
+
+        window.db = db;
+        window.auth = auth;
+        window.appId = firebaseConfig.appId || (app && app.options && app.options.appId) || null;
+
+        // Expose commonly-used Firestore helpers as globals for the non-module script below
+        window.collection = collection;
+        window.query = query;
+        window.orderBy = orderBy;
+        window.addDoc = addDoc;
+        window.onSnapshot = onSnapshot;
+        window.serverTimestamp = serverTimestamp;
+        window.signInAnonymously = signInAnonymously;
+        window.onAuthStateChanged = onAuthStateChanged;
+
+        window.firestoreUtils = { collection, addDoc, onSnapshot, query, serverTimestamp };
+
+
+        async function initAuth() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        }
+
+
+        initAuth();
+
+
+        // AUTH GATE
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.__AUTH_READY__ = true;
+                const btn = document.querySelector('.note-submit-btn');
+                const ta = document.getElementById('note-input');
+                if (btn) btn.disabled = false;
+                if (ta) ta.disabled = false;
+            }
+        });
+    </script>
+
+    <!-- Starfield Background Module - Independent script for reliable execution -->
+    <script>
+        (function () {
+            'use strict';
+
+            const STAR_COUNT = 400;
+            const SHOOTING_STAR_COUNT = 3;
+            const INTERACTION_RADIUS = 120;
+
+            let canvas, ctx;
+            let stars = [];
+            let shootingStars = [];
+            let mouse = { x: null, y: null };
+
+            function createCanvas() {
+                canvas = document.createElement('canvas');
+                canvas.id = 'starfield-canvas';
+                canvas.style.cssText = 'position:fixed;inset:0;z-index:1;pointer-events:none;';
+                document.body.insertBefore(canvas, document.body.firstChild);
+                ctx = canvas.getContext('2d');
+                resizeCanvas();
+            }
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                initStars();
+            }
+
+            function initStars() {
+                stars = [];
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        baseX: 0, baseY: 0, // Will store original position
+                        size: Math.random() * 2.5 + 0.5,
+                        opacity: Math.random(),
+                        pulse: 0.005 + Math.random() * 0.015,
+                        vx: (Math.random() - 0.5) * 0.1,
+                        vy: (Math.random() - 0.5) * 0.1,
+                        r: 240 + Math.floor(Math.random() * 15),
+                        g: 200 + Math.floor(Math.random() * 55),
+                        b: 140 + Math.floor(Math.random() * 115)
+                    });
+                    // Set base position to initial position
+                    stars[stars.length - 1].baseX = stars[stars.length - 1].x;
+                    stars[stars.length - 1].baseY = stars[stars.length - 1].y;
+                }
+                shootingStars = [];
+                for (let i = 0; i < SHOOTING_STAR_COUNT; i++) {
+                    shootingStars.push({ x: 0, y: 0, length: 250 + Math.random() * 100, speed: 20 + Math.random() * 15, opacity: 0, active: false });
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (const s of stars) {
+                    // Twinkle
+                    s.opacity += s.pulse;
+                    if (s.opacity > 1 || s.opacity < 0.2) s.pulse *= -1;
+
+                    // Base position drift
+                    s.baseX += s.vx;
+                    s.baseY += s.vy;
+                    if (s.baseX < 0 || s.baseX > canvas.width) s.vx *= -1;
+                    if (s.baseY < 0 || s.baseY > canvas.height) s.vy *= -1;
+
+                    // Mouse interaction - push stars away
+                    if (mouse.x !== null) {
+                        const dx = mouse.x - s.x;
+                        const dy = mouse.y - s.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < INTERACTION_RADIUS) {
+                            const force = (INTERACTION_RADIUS - distance) / INTERACTION_RADIUS;
+                            s.x -= (dx / distance) * force * 15;
+                            s.y -= (dy / distance) * force * 15;
+                        }
+                    }
+
+                    // Spring back to base position
+                    s.x += (s.baseX - s.x) / 15;
+                    s.y += (s.baseY - s.y) / 15;
+
+                    ctx.fillStyle = `rgba(${s.r},${s.g},${s.b},${s.opacity})`;
+                    ctx.shadowBlur = s.size * 3;
+                    ctx.shadowColor = 'rgba(243,207,142,0.5)';
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+
+                for (const ss of shootingStars) {
+                    if (!ss.active) {
+                        if (Math.random() < 0.0005) {
+                            ss.active = true;
+                            ss.x = Math.random() * canvas.width * 0.8;
+                            ss.y = Math.random() * canvas.height * 0.3;
+                            ss.opacity = 1;
+                        }
+                        continue;
+                    }
+                    ss.x += ss.speed;
+                    ss.y += ss.speed * 0.2;
+                    ss.opacity -= 0.008;
+                    if (ss.opacity <= 0) { ss.active = false; continue; }
+
+                    ctx.strokeStyle = `rgba(255,255,255,${ss.opacity})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(ss.x, ss.y);
+                    ctx.lineTo(ss.x - ss.length, ss.y - ss.length * 0.2);
+                    ctx.stroke();
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            function init() {
+                createCanvas();
+                window.addEventListener('resize', resizeCanvas);
+
+                // Mouse tracking for star interaction
+                window.addEventListener('mousemove', (e) => {
+                    mouse.x = e.clientX;
+                    mouse.y = e.clientY;
+                });
+                window.addEventListener('mouseleave', () => {
+                    mouse.x = null;
+                    mouse.y = null;
+                });
+
+                animate();
+                console.log('✨ Starfield initialized with', STAR_COUNT, 'stars');
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@200;400&family=Caveat:wght@400;700&display=swap');
+
+        :root {
+            --sky-gold: #f3cf8e;
+            --sky-blue-deep: #02040a;
+            --sky-blue-glow: #1a2a44;
+            --sky-white: #ffffff;
+            --transition-speed: 2.5s;
+            --card-border-width: 1px;
+            --card-border-color: rgba(243, 207, 142, 0.4);
+            --card-radius: 4px;
+        }
+
+        body {
+            background-color: var(--sky-blue-deep);
+            color: var(--sky-white);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            perspective: 1500px;
+        }
+
+        .cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .handwritten {
+            font-family: 'Caveat', cursive;
+        }
+
+        #star-field {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, #0a1b33 0%, var(--sky-blue-deep) 100%);
+            z-index: 0;
+        }
+
+        #slideshow-container {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            transform-style: preserve-3d;
+            transition: transform 0.2s ease-out;
+        }
+
+        .scene {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transform-style: preserve-3d;
+            transition:
+                opacity var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
+                transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .scene.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scene.exiting {
+            opacity: 0;
+            transform: translateZ(-800px) rotateX(-20deg);
+            pointer-events: none;
+        }
+
+        @keyframes sceneFloat {
+            0% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-15px) rotate(0.5deg);
+            }
+
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+        }
+
+        @keyframes cardPulse {
+            0% {
+                box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9), 0 0 0px rgba(243, 207, 142, 0);
+            }
+
+            50% {
+                box-shadow: 0 40px 120px rgba(0, 0, 0, 1), 0 0 20px rgba(243, 207, 142, 0.1);
+            }
+
+            100% {
+                box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9), 0 0 0px rgba(243, 207, 142, 0);
+            }
+        }
+
+        .img-card {
+            position: relative;
+            opacity: 0;
+            aspect-ratio: 16 / 9;
+            transform-style: preserve-3d;
+            transform: translateZ(-1000px) rotateX(15deg) translateY(50px);
+            transition:
+                opacity 2.5s cubic-bezier(0.2, 1, 0.3, 1),
+                transform 3s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            overflow: visible !important;
+        }
+
+        .img-card-inner {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            border: var(--card-border-width) solid var(--card-border-color);
+            border-radius: var(--card-radius);
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
+            filter: brightness(0.6) blur(20px);
+            transition: filter 2s ease-out;
+            pointer-events: none;
+            z-index: 1;
+            transform: translateZ(0);
+        }
+
+        .img-card.loaded .img-card-inner {
+            filter: brightness(1) blur(0px);
+        }
+
+        .scene.active .img-card {
+            opacity: 1;
+            transform: translateZ(0) rotateX(0deg) translateY(0);
+            animation:
+                sceneFloat 10s ease-in-out infinite,
+                cardPulse 8s ease-in-out infinite;
+        }
+
+        .caption-group {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s ease-out 1.5s;
+            transform: translateZ(100px);
+            z-index: 9999;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+        }
+
+        .scene.active .caption-group {
+            opacity: 1;
+        }
+
+        .flexible-arrow-svg {
+            position: absolute;
+            overflow: visible;
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5));
+            z-index: 10;
+        }
+
+        .arrow-path {
+            stroke: #ffffff;
+            stroke-width: 2.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-dasharray: 250;
+            stroke-dashoffset: 250;
+            animation: drawArrow 1.5s ease-out forwards 1.8s, arrowFlow 3s ease-in-out infinite;
+        }
+
+        @keyframes drawArrow {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes arrowFlow {
+
+            0%,
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 0.9;
+            }
+
+            33% {
+                transform: translate(1px, -1px) rotate(0.1deg);
+            }
+
+            66% {
+                transform: translate(-1px, 1px) rotate(-0.1deg);
+                opacity: 1;
+            }
+        }
+
+        .caption-text {
+            position: absolute;
+            font-size: 24px;
+            color: #ffffff;
+            text-shadow: 0 0 12px rgba(0, 0, 0, 1), 0 0 8px rgba(255, 255, 255, 0.4);
+            white-space: nowrap;
+            letter-spacing: 0.05em;
+            width: max-content;
+            z-index: 20;
+            backface-visibility: hidden;
+        }
+
+        .constellation-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-style: preserve-3d;
+        }
+
+        .img-card:nth-child(2n) {
+            animation-delay: -2s;
+        }
+
+        .img-card:nth-child(3n) {
+            animation-delay: -4s;
+        }
+
+        .nebula-cloud {
+            position: fixed;
+            background: radial-gradient(ellipse at center,
+                    rgba(120, 160, 255, 0.15) 0%,
+                    rgba(120, 160, 255, 0.05) 40%,
+                    rgba(120, 160, 255, 0) 70%);
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes dashMove {
+            from {
+                stroke-dashoffset: 0;
+            }
+
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+
+
+        .prop {
+            position: absolute;
+            pointer-events: none;
+            z-index: 60;
+            filter: drop-shadow(0 0 10px var(--sky-gold));
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+            transform: translateZ(20px);
+        }
+
+        .scene.active .prop {
+            opacity: 1;
+        }
+
+        .candle {
+            width: 10px;
+            height: 30px;
+            background: linear-gradient(to top, #c44, #f77);
+            border-radius: 1px;
+        }
+
+        .candle::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 10px;
+            background: #ffeb3b;
+            border-radius: 50% 50% 20% 20%;
+            box-shadow: 0 0 12px #f3cf8e;
+            animation: flicker 0.2s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% {
+                transform: translateX(-50%) scale(1) rotate(-1deg);
+            }
+
+            100% {
+                transform: translateX(-50%) scale(1.2) rotate(1deg);
+            }
+        }
+
+        .wing-star {
+            width: 18px;
+            height: 18px;
+            background: white;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            animation: pulse-star 3s infinite alternate;
+        }
+
+        @keyframes pulse-star {
+            from {
+                transform: scale(1);
+                opacity: 0.5;
+                filter: blur(1px);
+            }
+
+            to {
+                transform: scale(1.4);
+                opacity: 1;
+                filter: blur(0px);
+            }
+        }
+
+        .spirit-bell {
+            width: 2px;
+            height: 40px;
+            background: rgba(243, 207, 142, 0.3);
+        }
+
+        .spirit-bell::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -4px;
+            width: 10px;
+            height: 10px;
+            background: var(--sky-gold);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--sky-gold);
+        }
+
+        .tape {
+            position: absolute;
+            width: 80px;
+            height: 24px;
+            background: rgba(243, 207, 142, 0.15);
+            backdrop-filter: blur(4px);
+            z-index: 55;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+        }
+
+        .tape-tl {
+            top: -12px;
+            left: -20px;
+            transform: rotate(-35deg) translateZ(10px);
+        }
+
+        .tape-tr {
+            top: -12px;
+            right: -20px;
+            transform: rotate(35deg) translateZ(10px);
+        }
+
+        .kb-zoom-out {
+            animation: kb-zoom-out 25s linear forwards;
+        }
+
+        @keyframes kb-zoom-out {
+            from {
+                background-size: 115%;
+            }
+
+            to {
+                background-size: 100%;
+            }
+        }
+
+        .overlay-ui {
+            position: relative;
+            z-index: 200;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4rem;
+            pointer-events: none;
+        }
+
+        .overlay-ui * {
+            pointer-events: auto;
+        }
+
+        #setup-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 3.5s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: rgba(243, 207, 142, 0.05);
+            width: 100%;
+            z-index: 210;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--sky-gold);
+            width: 0%;
+            box-shadow: 0 0 15px var(--sky-gold);
+        }
+
+        #bloom-overlay {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            mix-blend-mode: soft-light;
+        }
+
+        .bloom-active {
+            animation: bloomEffect 3s ease-out;
+        }
+
+        @keyframes bloomEffect {
+            0% {
+                opacity: 0;
+            }
+
+            40% {
+                opacity: 0.4;
+                filter: blur(40px);
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(243, 207, 142, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 12px;
+            border-radius: 50%;
+            transition: all 0.3s;
+            cursor: pointer;
+            opacity: 0.4;
+        }
+
+        .nav-btn:hover {
+            opacity: 1;
+            background: rgba(243, 207, 142, 0.1);
+            border-color: var(--sky-gold);
+            transform: scale(1.1);
+        }
+
+        .constellation-line {
+            position: absolute;
+            fill: none;
+            stroke: var(--sky-gold);
+            stroke-width: 1;
+            stroke-dasharray: 5 5;
+            opacity: 0.15;
+            transition: opacity 2s ease;
+            pointer-events: none;
+        }
+
+        .scene.active .constellation-line {
+            opacity: 0.4;
+            animation: dashMove 30s linear infinite;
+        }
+
+
+        /* --- NEW STYLES FOR FINAL NOTE PAGE --- */
+        #final-note-scene {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 5vh;
+            background: radial-gradient(circle at 50% 50%, #1a2a44 0%, #02040a 100%);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        #final-note-scene::-webkit-scrollbar {
+            display: none;
+        }
+
+        .note-input-container {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(243, 207, 142, 0.2);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 4rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            z-index: 10;
+        }
+
+
+        .note-textarea {
+            width: 100%;
+            height: 120px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(243, 207, 142, 0.3);
+            color: var(--sky-white);
+            font-family: 'Caveat', cursive;
+            font-size: 20px;
+            outline: none;
+            resize: none;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .note-name-input {
+            width: 100%;
+            max-width: 250px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(243, 207, 142, 0.2);
+            color: var(--sky-gold);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+            margin-top: 1.5rem;
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        .note-name-input::placeholder {
+            color: rgba(243, 207, 142, 0.3);
+        }
+
+        .memory-author {
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            color: var(--sky-gold);
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-submit-btn {
+            margin-top: 2rem;
+            padding: 0.8rem 2.5rem;
+            border: 1px solid var(--sky-gold);
+            color: var(--sky-gold);
+            background: transparent;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.4em;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .note-submit-btn:hover {
+            background: rgba(243, 207, 142, 0.1);
+            transform: scale(1.05);
+        }
+
+        .memory-wall {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            padding-bottom: 10vh;
+        }
+
+        .memory-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(243, 207, 142, 0.1);
+            padding: 1.5rem;
+            border-radius: 4px;
+            position: relative;
+            animation: fadeIn 2s ease-out forwards;
+            transition: all 0.4s ease;
+            cursor: default;
+        }
+
+        .memory-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(243, 207, 142, 0.4);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(243, 207, 142, 0.1);
+        }
+
+        .memory-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(243, 207, 142, 0.05) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            border-radius: 4px;
+        }
+
+        .memory-card:hover::after {
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes starPulse {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.3);
+            }
+        }
+
+        .memory-card::before {
+            content: '✦';
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 10px;
+            color: var(--sky-gold);
+            opacity: 0.4;
+            animation: starPulse 3s ease-in-out infinite;
+        }
+
+        .memory-card:nth-child(1) {
+            animation-delay: 0.0s;
+        }
+
+        .memory-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .memory-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .memory-card:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .memory-card:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
+        .memory-card:nth-child(6) {
+            animation-delay: 0.5s;
+        }
+
+        .memory-card:nth-child(n+7) {
+            animation-delay: 0.6s;
+        }
+
+        .memory-card:nth-child(odd)::before {
+            animation-delay: -1s;
+        }
+
+        .memory-card:nth-child(even)::before {
+            animation-delay: -2s;
+        }
+
+        .memory-text {
+            font-family: 'Caveat', cursive;
+            font-size: 18px;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .memory-time {
+            font-family: 'Inter', sans-serif;
+            font-size: 8px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--sky-gold);
+            opacity: 0.3;
+            margin-top: 1rem;
+        }
+
+        .notes-mute-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(243, 207, 142, 0.2);
+            backdrop-filter: blur(10px);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.3s;
+        }
+
+        .notes-mute-btn:hover {
+            opacity: 1;
+            border-color: var(--sky-gold);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+
+<body onmousemove="handleGlobalInput(event)">
+
+    <audio id="bg-music" src="bg_music.weba" loop></audio>
+
+    <div id="star-field"></div>
+    <div id="bloom-overlay"></div>
+    <canvas id="nebula-canvas"
+        style="position:fixed;left:0;top:0;width:100%;height:100%;z-index:1;opacity:0.9;pointer-events:none;"></canvas>
+    <canvas id="shooting-star-canvas"
+        style="position:fixed;left:0;top:0;width:100%;height:100%;z-index:2;pointer-events:none;"></canvas>
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen">
+        <div class="text-center">
+            <h1 class="cinzel text-7xl mb-4 text-[#f3cf8e] tracking-[0.6em] opacity-80">
+                Memories of Light
+            </h1>
+
+            <p class="text-white/20 mb-16 tracking-[1.2em] uppercase text-[9px] font-light">
+                Shared moments within the clouds
+            </p>
+
+            <!-- Buttons stacked -->
+            <div class="flex flex-col items-center space-y-4">
+                <button onclick="beginJourney()"
+                    class="px-16 py-4 border border-[#f3cf8e] text-[#f3cf8e] cinzel tracking-[1em] text-[10px] hover:bg-[#f3cf8e]/10 transition-all">
+                    Begin
+                </button>
+
+                <button onclick="showFinalNotePage()"
+                    class="text-[9px] tracking-[0.4em] opacity-50 hover:opacity-100 transition">
+                    NOTES
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="slideshow-container"></div>
+
+
+    <!-- FINAL MEMORY PAGE -->
+    <div id="final-note-scene">
+        <!-- Mute button for notes page -->
+        <button onclick="toggleMute()" id="notes-mute-btn" class="notes-mute-btn">
+            🔈
+        </button>
+
+        <div class="note-input-container">
+            <h2 class="cinzel text-xl text-[#f3cf8e] tracking-[0.4em] mb-2">Leave a Memory</h2>
+            <p class="text-[9px] uppercase tracking-[0.2em] opacity-40">Your words will drift among the stars</p>
+            <input type="text" id="name-input" class="note-name-input" placeholder="Your name (optional)"
+                maxlength="30">
+            <textarea id="note-input" class="note-textarea" placeholder="Write something..."></textarea>
+            <div id="statusMessage" class="text-xs opacity-40 mt-2"></div>
+            <button onclick="window.sendNote()" class="note-submit-btn">SEND TO THE SKY</button>
+        </div>
+        <button onclick="window.location.reload()"
+            class="mb-6 mt-2 text-[10px] tracking-[0.4em] opacity-50 hover:opacity-100 transition border border-[#f3cf8e]/30 px-6 py-2 hover:border-[#f3cf8e]">
+            ↻ RESTART
+        </button>
+        <div id="notesContainer" class="memory-wall"></div>
+    </div>
+
+    <!-- UI OVERLAY -->
+    <div id="ui-overlay" class="overlay-ui opacity-0 transition-opacity duration-1000">
+        <div class="flex justify-between items-start">
+
+            <!-- Left text -->
+            <div class="cinzel text-[#f3cf8e] space-y-1">
+                <div class="text-[12px] tracking-[0.8em] uppercase opacity-30">
+                    Memory Constellation
+                </div>
+                <div id="image-counter" class="text-xl tracking-[0.2em]">
+                    000 / 122
+                </div>
+            </div>
+
+            <!-- Right controls (STACKED) -->
+            <div class="flex flex-col items-center space-y-2">
+
+                <!-- Play / Pause -->
+                <button onclick="togglePlay()" class="opacity-40 hover:opacity-100 transition-opacity">
+                    <div id="pause-icon" class="w-8 h-8 flex items-center justify-center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                            <rect x="4" y="4" width="4" height="16" />
+                            <rect x="16" y="4" width="4" height="16" />
+                        </svg>
+                    </div>
+
+                    <div id="play-icon" class="hidden w-8 h-8 flex items-center justify-center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                            <polygon points="5,3 19,12 5,21" />
+                        </svg>
+                    </div>
+                </button>
+
+                <!-- Mute (NOW BELOW 😤) -->
+                <button onclick="toggleMute()" id="mute-btn"
+                    class="opacity-40 hover:opacity-100 transition-opacity text-sm">
+                    🔈
+                </button>
+
+            </div>
+        </div>
+        <!-- </div> -->
+
+
+        <!-- Navigation Buttons -->
+        <div class="flex items-center justify-between w-full">
+            <button onclick="navigatePrev()" class="nav-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+                    <path d="M15 18l-6-6 6-6" />
+                </svg>
+            </button>
+
+            <button onclick="window.showFinalNotePage()" class="nav-btn text-xs tracking-widest">
+                SKIP
+            </button>
+
+            <button onclick="navigateNext()" class="nav-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- <div id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Memory Preview" onclick="event.stopPropagation()">
+    </div> -->
+
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+        <div id="progress-fill"></div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const TOTAL_IMAGES = 122;
+        const IMAGE_FOLDER = 'Images';
+        const SCENE_DURATION = 7000;
+
+        let currentIndex = 0;
+        let imagesShown = 0;
+        let isPlaying = false;
+        let isLightboxOpen = false;
+        let wasPlayingBeforeLightbox = false;
+        let progressStartTime;
+        let progressPercent = 0;
+        let lastLayout = null;
+        let isTransitioning = false;
+        let isMuted = false;
+        let layoutQueue = [];
+
+        const CAPTIONS = {
+            1: "20/11/2024 \n What you finding lady???",
+            2: "21/11/2024 \n I am strong!! (❁´◡`❁)",
+            4: "27/11/2024 \n I am a fairy~",
+            6: "27/11/2024 \n I present to you- My Shaylaaa",
+            7: "27/11/2024 \n Uhhh... what're we doing?",
+            9: "1/12/2024 \n Two moons 🥰",
+            11: "15/1/2025",
+            16: "26/1/2025 \n Miss Pianist",
+            18: "27/1/2025 \n The three Musketeers",
+            20: "27/1/2025 \n Is she upset??",
+            22: "27/1/2025 \n Kucchu pucchu 😭😭",
+            26: "27/1/2025 \n Look at me!! I can flyyyy",
+            29: "3/2/2025 \n Don't mess with us 😤",
+            33: "7/3/2025 \n Remember Meeru's Birthday???",
+            35: "16/3/2025 \n It's Our first end realm together?",
+            37: "25/3/2025 \n 'I am a strong Girl!! ヽ（≧□≦）ノ'",
+            40: "25/3/2025 \n Ik ik, i am so charming,\nshe can't stop looking at me",
+            43: "27/3/2025 \n My Sleeping Beauty...",
+            45: "29/3/2025 \n LOOK AT THE CAMERA 😬",
+            47: "3/4/2025 \n Butterflies in their natural \nenvironment 🤭",
+            49: "3/4/2025 \n I swear she is not drunk...",
+            51: "4/4/2025 \n Mwah",
+            52: "4/4/2025 \n mwah x2",
+            54: "15/4/2025 \n My Birthdayyyy!",
+            56: "Dancers",
+            57: "16/4/2025",
+            58: "",
+            60: "8/5/2025 \n It's Washu's Birthday!",
+            61: "🤤🤤🤤",
+            62: "8/5/2025 \n Washu: 'What's she doing?\nLia: 'Pata nhi...'",
+            64: "8/5/2025 \n Yeyyyyyyyyyy",
+            66: "8/5/2025 \n Shhhhh... She doesn't see me",
+            67: "🤭🤭🤭",
+            69: "20/5/2025",
+            71: "23/5/2025",
+            73: "23/5/2025 \n Best selfie",
+            77: "29/5/2025 \n Looks like i am vloging 😭😭",
+            78: "2/6/2025 \n (She thinks i don't see her)",
+            79: "3/6/2025 \n Slayyyyy girls!",
+            80: "3/6/2025 \n Boss Girlies 💅✨✨",
+            81: "3/6/2025 \n Literally the next K-pop idols",
+            82: "3/6/2025 \n and ME!",
+            86: "5/6/2025 \n I watch everything from shadows...",
+            88: "20/6/2025",
+            89: "20/6/2025 \n I Tried my best for \ncinematic shot...",
+            92: "20/6/2025 \n Models",
+            95: "20/6/2025 \n Panchhi banu 🕊️, urte chalu",
+            97: "20/6/2025",
+            98: "9/7/2025 \n My Bauni 😘😘😘",
+            101: "1/9/2025",
+            103: "1/9/2025",
+            105: "20/9/2025 \n We Completed the End realm \ntogether!!",
+            108: "20/9/2025 \n My Angel 🥰🥰🥰",
+            110: "25/10/2025 \n This was Lia's Birthdayyy",
+            113: "25/10/2025 \n Photoshoot time",
+            120: "27/11/2025 \n Titanic Ahhhh Pose!!",
+            122: "30/12/2025 \n and lastly, We became snowman..."
+        };
+
+        const interaction = { x: null, y: null, radius: 120 };
+
+        function getNextImageData() {
+            const index = currentIndex + 1;
+            const url = `${IMAGE_FOLDER}/${index}.jpg`;
+            currentIndex = (currentIndex + 1) % TOTAL_IMAGES;
+            imagesShown++;
+            return { url, index };
+        }
+
+        function createFlexibleCaption(card, text) {
+            const group = document.createElement('div');
+            group.className = 'caption-group';
+            const angle = Math.random() * Math.PI * 2;
+            const distText = 100 + Math.random() * 80;
+            const tx = Math.cos(angle) * distText;
+            const ty = Math.sin(angle) * distText;
+            const halfW = 80; const halfH = 45; const padding = 8;
+            let sx, sy;
+            const absCos = Math.abs(Math.cos(angle));
+            const absSin = Math.abs(Math.sin(angle));
+            if (halfH * absCos > halfW * absSin) {
+                sx = Math.sign(tx) * (halfW - padding);
+                sy = ty * (sx / tx);
+            } else {
+                sy = Math.sign(ty) * (halfH - padding);
+                sx = tx * (sy / ty);
+            }
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("class", "flexible-arrow-svg");
+            const midX = sx + (tx - sx) * 0.4 + (Math.random() - 0.5) * 60;
+            const midY = sy + (ty - sy) * 0.4 + (Math.random() - 0.5) * 60;
+            const minX = Math.min(sx, tx) - 60; const maxX = Math.max(sx, tx) + 60;
+            const minY = Math.min(sy, ty) - 60; const maxY = Math.max(sy, ty) + 60;
+            svg.setAttribute("width", maxX - minX); svg.setAttribute("height", maxY - minY);
+            svg.style.left = `${minX}px`; svg.style.top = `${minY}px`;
+            svg.setAttribute("viewBox", `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("class", "arrow-path");
+            path.setAttribute("d", `M ${sx} ${sy} Q ${midX} ${midY} ${tx} ${ty}`);
+            const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            dot.setAttribute("cx", tx); dot.setAttribute("cy", ty); dot.setAttribute("r", "2"); dot.setAttribute("fill", "white");
+            svg.appendChild(path); svg.appendChild(dot);
+            const caption = document.createElement('div');
+            caption.className = 'caption-text handwritten';
+            caption.innerText = text;
+            caption.style.left = `${tx}px`; caption.style.top = `${ty}px`;
+            caption.style.transform = `translate(-50%, -50%)`;
+            group.appendChild(svg); group.appendChild(caption);
+            group.style.left = "50%"; group.style.top = "50%";
+            card.appendChild(group);
+        }
+
+        function createCard(imageData) {
+            const card = document.createElement('div');
+            card.className = 'img-card';
+            const inner = document.createElement('div');
+            inner.className = 'img-card-inner';
+            card.appendChild(inner);
+            const img = new Image();
+            img.src = imageData.url;
+            img.onload = () => {
+                inner.style.backgroundImage = `url('${imageData.url}')`;
+                card.classList.add('loaded');
+            };
+            card.onclick = () => openLightbox(imageData.url);
+            if (CAPTIONS[imageData.index]) createFlexibleCaption(card, CAPTIONS[imageData.index]);
+            return card;
+        }
+
+        function handleGlobalInput(e) {
+            interaction.x = e.clientX;
+            interaction.y = e.clientY;
+            handleParallax(e);
+        }
+
+        function handleParallax(e) {
+            if (!isPlaying) return;
+            const x = (e.clientX - window.innerWidth / 2) / 80;
+            const y = (e.clientY - window.innerHeight / 2) / 80;
+            document.getElementById('slideshow-container').style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
+        }
+
+
+
+        function beginJourney() {
+            document.getElementById('setup-screen').style.opacity = '0';
+            document.getElementById('setup-screen').style.transform = 'translateZ(-300px) translateY(-50px)';
+            isPlaying = true;
+
+            // Start Music
+            const music = document.getElementById('bg-music');
+            music.volume = 0.7;
+            music.play().catch(() => {
+                console.log("Audio requires manual interaction first");
+            });
+
+            setTimeout(() => {
+                document.getElementById('setup-screen').classList.add('hidden');
+                document.getElementById('ui-overlay').classList.remove('opacity-0');
+                startSlideshow();
+            }, 3500);
+        }
+
+        function addProp(parent, type, style = {}) {
+            const prop = document.createElement('div');
+            prop.className = `prop ${type}`;
+            Object.assign(prop.style, style);
+            parent.appendChild(prop);
+        }
+
+        /* --- LAYOUT DEFINITIONS --- */
+        const Layouts = {
+            pyramid: () => {
+                const scene = createScene();
+                const spots = [{ w: '30vw', t: '15%', l: '18%', d: '0s' }, { w: '30vw', t: '15%', l: '52%', d: '0.4s' }, { w: '35vw', t: '50%', l: '32.5%', d: '0.8s' }];
+                spots.forEach((s, i) => {
+                    const data = getNextImageData();
+                    const img = createCard(data);
+                    img.classList.add('absolute');
+                    img.style.width = s.w; img.style.top = s.t; img.style.left = s.l; img.style.transitionDelay = s.d;
+                    const tape = document.createElement('div');
+                    tape.className = Math.random() > 0.5 ? 'tape tape-tl' : 'tape tape-tr';
+                    img.appendChild(tape);
+                    addProp(img, 'wing-star', { top: '-5px', right: '-5px' });
+                    if (i === 2) addProp(img, 'spirit-bell', { top: '-50px', left: '50%' });
+                    scene.appendChild(img);
+                });
+                return scene;
+            },
+            tiltedSpread: () => {
+                const scene = createScene();
+                const spots = [{ w: '26vw', t: '12%', l: '10%', r: '-8deg', d: '0s' }, { w: '28vw', t: '8%', l: '42%', r: '4deg', d: '0.3s' }, { w: '27vw', t: '48%', l: '15%', r: '2deg', d: '0.6s' }, { w: '30vw', t: '52%', l: '55%', r: '-6deg', d: '0.9s' }];
+                spots.forEach(s => {
+                    const data = getNextImageData();
+                    const img = createCard(data);
+                    img.classList.add('absolute');
+                    img.style.width = s.w; img.style.top = s.t; img.style.left = s.l; img.style.transform = `rotate(${s.r})`; img.style.transitionDelay = s.d;
+                    const tape = document.createElement('div');
+                    tape.className = Math.random() > 0.5 ? 'tape tape-tl' : 'tape tape-tr';
+                    img.appendChild(tape);
+                    addProp(img, 'wing-star', { top: '-5px', right: '-5px' });
+                    scene.appendChild(img);
+                });
+                return scene;
+            },
+            temple: () => {
+                const scene = createScene('flex items-end gap-8 pb-32');
+                const specs = [{ h: '35vh', w: '20vw', d: '0.6s' }, { h: '65vh', w: '38vw', d: '0s' }, { h: '35vh', w: '20vw', d: '0.6s' }];
+                specs.forEach((s, i) => {
+                    const data = getNextImageData();
+                    const img = createCard(data);
+                    img.classList.add('kb-zoom-out');
+                    img.style.height = s.h; img.style.width = s.w; img.style.transitionDelay = s.d;
+                    const tape = document.createElement('div');
+                    tape.className = Math.random() > 0.5 ? 'tape tape-tl' : 'tape tape-tr';
+                    img.appendChild(tape);
+                    addProp(img, 'wing-star', { top: '-10px', right: '10%' });
+                    if (i === 1) {
+                        addProp(img, 'spirit-bell', { top: '-60px', left: '50%' });
+                        addProp(img, 'candle', { bottom: '-40px', left: '15%' });
+                        addProp(img, 'candle', { bottom: '-35px', right: '15%' });
+                    }
+                    scene.appendChild(img);
+                });
+                return scene;
+            },
+            constellationCircle: () => createConstellation('circle'),
+            constellationZigzag: () => createConstellation('zigzag')
+        };
+
+        /* --- CONSTELLATION LOGIC --- */
+        function createConstellation(type) {
+            const scene = createScene();
+            const wrapper = document.createElement('div');
+            wrapper.className = 'constellation-wrapper';
+            scene.appendChild(wrapper);
+            const count = 5;
+            const radius = 28;
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("class", "constellation-line absolute inset-0 w-full h-full");
+            wrapper.appendChild(svg);
+            const coords = [];
+            for (let i = 0; i < count; i++) {
+                let x, y;
+                if (type === 'circle') {
+                    const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+                    x = 40 + Math.cos(angle) * radius; y = 40 + Math.sin(angle) * radius;
+                } else {
+                    x = 5 + (i * 17.5); y = i % 2 === 0 ? 20 : 60;
+                }
+                coords.push({ x, y });
+                const data = getNextImageData();
+                const img = createCard(data);
+                img.classList.add('absolute');
+                img.style.width = '26vw'; img.style.top = `${y}%`; img.style.left = `${x}%`;
+                img.style.transform = `translate(-50%, -50%) translateZ(${Math.random() * 60}px)`;
+                img.style.transitionDelay = `${i * 0.2}s`;
+                if (i % 2 === 0) addProp(img, 'wing-star', { top: '-10px', left: '50%' });
+                wrapper.appendChild(img);
+            }
+            for (let i = 0; i < count; i++) {
+                const p1 = coords[i]; const p2 = coords[(i + 1) % count];
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", `${p1.x}%`); line.setAttribute("y1", `${p1.y}%`);
+                line.setAttribute("x2", `${p2.x}%`); line.setAttribute("y2", `${p2.y}%`);
+                svg.appendChild(line);
+            }
+            return scene;
+        }
+
+        function createScene(extraClass = '') {
+            const scene = document.createElement('div');
+            scene.className = `scene ${extraClass}`;
+            return scene;
+        }
+
+        /* --- NEXT SCENE LOGIC --- */
+        function showNext() {
+            if (isTransitioning) return;
+
+            // Check if we've shown all images
+            if (imagesShown >= TOTAL_IMAGES) {
+                showFinalNotePage();
+                return;
+            }
+
+            isTransitioning = true;
+            const bloom = document.getElementById('bloom-overlay');
+            bloom.classList.remove('bloom-active');
+            void bloom.offsetWidth;
+            bloom.classList.add('bloom-active');
+
+            if (layoutQueue.length === 0) {
+                const keys = Object.keys(Layouts);
+                layoutQueue = keys.sort(() => Math.random() - 0.5);
+            }
+            const nextKey = layoutQueue.shift();
+            const nextScene = Layouts[nextKey]();
+            document.getElementById('slideshow-container').appendChild(nextScene);
+
+            setTimeout(() => {
+                const currentActive = document.querySelector('.scene.active');
+                if (currentActive) {
+                    currentActive.classList.remove('active');
+                    currentActive.classList.add('exiting');
+                    setTimeout(() => currentActive.remove(), 4000);
+                }
+                nextScene.classList.add('active');
+                document.getElementById('image-counter').innerText = `${String(currentIndex).padStart(3, '0')} / ${TOTAL_IMAGES}`;
+                setTimeout(() => { isTransitioning = false; }, 1200);
+            }, 100);
+        }
+
+
+        /* --- GO TO NOTES LOGIC --- */
+        function goToNotesSafely() {
+            // if (window.__AUTH_READY__ !== true) {
+            //     setTimeout(goToNotesSafely, 100);
+            //     return;
+            // }
+            showFinalNotePage();
+        }
+
+        /* --- FINAL PAGE LOGIC --- */
+        window.showFinalNotePage = function () {
+            isPlaying = false;
+            isTransitioning = true;
+
+            // 🔒 HIDE setup-screen completely to fix z-index issue
+            const setupScreen = document.getElementById('setup-screen');
+            if (setupScreen) {
+                setupScreen.style.display = 'none';
+                setupScreen.style.pointerEvents = 'none';
+            }
+
+            // 🔒 Disable ALL other layers from capturing input
+            document.getElementById('slideshow-container')?.style.setProperty('pointer-events', 'none');
+            document.getElementById('ui-overlay')?.style.setProperty('pointer-events', 'none');
+
+            // Hide progress / controls visually
+            document.getElementById('ui-overlay')?.classList.add('opacity-0');
+            document.querySelector('.progress-bar')?.style.setProperty('display', 'none');
+
+            // Hide any active slideshow scene
+            document.querySelectorAll('.scene').forEach(scene => {
+                scene.style.pointerEvents = 'none';
+            });
+
+            // ✅ SHOW NOTES PAGE AND ENABLE INPUT
+            const finalPage = document.getElementById('final-note-scene');
+            finalPage.style.display = 'flex';
+            finalPage.style.opacity = '1';
+            finalPage.style.pointerEvents = 'auto';
+
+            const input = document.getElementById('note-input');
+            const nameInput = document.getElementById('name-input');
+            const btn = document.querySelector('.note-submit-btn');
+            if (input) input.disabled = false;
+            if (nameInput) nameInput.disabled = false;
+            if (btn) btn.disabled = false;
+
+            // loadNotes();
+        };
+
+
+        /* --- NOTE LOGIC --- */
+        window.sendNote = async () => {
+            const input = document.getElementById('note-input');
+            const nameInput = document.getElementById('name-input');
+            const status = document.getElementById('statusMessage');
+            const text = input.value.trim();
+            const authorName = nameInput.value.trim() || 'Anonymous Traveler';
+            if (!text) return;
+
+            try {
+                input.disabled = true;
+                nameInput.disabled = true;
+
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+
+                await window.firestore.addDoc(
+                    window.firestore.collection(window.firestore.db, "notes"),
+                    {
+                        text,
+                        author: authorName,
+                        timestamp: window.firestore.serverTimestamp(),
+                        uid: auth.currentUser.uid
+                    }
+                );
+
+                input.value = "";
+                status.textContent = "Memory sent to the stars ✨";
+            } catch (e) {
+                console.error("Firestore write failed:", e);
+                status.textContent = "Failed to send memory…";
+            } finally {
+                input.disabled = false;
+                nameInput.disabled = false;
+            }
+        };
+
+
+
+        // Initialize real-time notes listener once Firebase has been initialized.
+        function initNotesListener(attempt = 0) {
+            const statusEl = document.getElementById('statusMessage');
+
+            // Check if Firebase is ready
+            if (!window.db || !window.collection || !window.onSnapshot) {
+                if (attempt < 50) {
+                    return setTimeout(() => initNotesListener(attempt + 1), 200);
+                } else {
+                    console.error('Firestore not available after waiting.');
+                    if (statusEl) statusEl.textContent = 'Database listener init error: Firestore unavailable.';
+                    return;
+                }
+            }
+
+            console.log('Initializing notes listener...');
+
+            try {
+                const notesCol = window.collection(window.db, 'notes');
+                // Try with ordering, fallback to no ordering if it fails
+                let q;
+                try {
+                    q = window.query(notesCol, window.orderBy('timestamp', 'desc'));
+                } catch (orderErr) {
+                    console.warn('OrderBy failed, using unordered query:', orderErr);
+                    q = notesCol;
+                }
+
+                window.onSnapshot(q, (snapshot) => {
+                    console.log('Notes snapshot received, count:', snapshot.size);
+                    const container = document.getElementById('notesContainer');
+                    if (!container) {
+                        console.error('notesContainer not found!');
+                        return;
+                    }
+                    container.innerHTML = '';
+
+                    if (snapshot.empty) {
+                        console.log('No notes found in database');
+                        return;
+                    }
+
+                    snapshot.forEach((doc) => {
+                        const data = doc.data() || {};
+                        console.log('Note data:', data);
+                        const card = document.createElement('div');
+                        card.className = 'memory-card';
+
+                        // Add author name
+                        const authorDiv = document.createElement('div');
+                        authorDiv.className = 'memory-author';
+                        authorDiv.textContent = data.author || 'Anonymous Traveler';
+                        card.appendChild(authorDiv);
+
+                        const textDiv = document.createElement('div');
+                        textDiv.className = 'memory-text';
+                        textDiv.textContent = data.text || '';
+                        card.appendChild(textDiv);
+                        const timeDiv = document.createElement('div');
+                        timeDiv.className = 'memory-time';
+                        const ts = data.timestamp;
+                        try {
+                            timeDiv.textContent = ts && ts.toDate ? ts.toDate().toLocaleString() : 'Just now';
+                        } catch (e) {
+                            timeDiv.textContent = 'Just now';
+                        }
+                        card.appendChild(timeDiv);
+                        container.appendChild(card);
+                    });
+                    if (statusEl) statusEl.textContent = '';
+                }, (error) => {
+                    console.error('Firestore Listener failed:', error);
+                    if (statusEl) statusEl.textContent = 'Database connection issue: ' + error.message;
+                });
+
+                console.log('Notes listener set up successfully');
+            } catch (err) {
+                console.error('Listener setup error:', err);
+                if (statusEl) statusEl.textContent = 'Database listener init error: ' + (err && err.message ? err.message : String(err));
+            }
+        }
+
+        // Start attempting to initialize the notes listener
+        initNotesListener();
+
+        // Initialize Anonymous Session
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                signInAnonymously(auth).catch(err => console.error("Auth failed:", err));
+            }
+        });
+
+
+
+        /* --- NOTES LOGIC --- */
+        // function loadNotes() {
+        //     const container = document.getElementById("notesContainer");
+
+        //     onSnapshot(collection(db, "notes"), snap => {
+        //         container.innerHTML = "";
+        //         snap.forEach(d => {
+        //         const div = document.createElement("div");
+        //         div.className = "note";
+        //         div.textContent = d.data().text;
+        //         container.appendChild(div);
+        //         });
+        //     });
+        // }
+
+
+
+        /* --- RESTART LOGIC --- */
+        window.restartExperience = function () {
+
+            window.location.reload();
+        };
+
+
+        /* --- NAVIGATION LOGIC --- */
+        function navigateNext() {
+            if (isTransitioning) return;
+            progressStartTime = Date.now();
+            progressPercent = 0;
+            showNext();
+        }
+
+        /* --- NAVIGATION LOGIC --- */
+        function navigatePrev() {
+            if (isTransitioning) return;
+            currentIndex = (currentIndex - 10 + TOTAL_IMAGES) % TOTAL_IMAGES;
+            imagesShown = Math.max(0, imagesShown - 10);
+            progressStartTime = Date.now();
+            progressPercent = 0;
+            showNext();
+        }
+
+        /* --- TIMER LOGIC --- */
+        function timerLoop() {
+            if (!isPlaying || isLightboxOpen) return;
+            const now = Date.now();
+            const elapsed = now - progressStartTime;
+            progressPercent = (elapsed / SCENE_DURATION) * 100;
+            document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+            if (elapsed >= SCENE_DURATION) {
+                showNext();
+                progressStartTime = Date.now();
+                progressPercent = 0;
+            }
+            requestAnimationFrame(timerLoop);
+        }
+
+        /* --- SLIDESHOW LOGIC --- */
+        function startSlideshow() {
+            showNext();
+            progressStartTime = Date.now();
+            timerLoop();
+            spawnNebulae();
+        }
+
+        /* --- PLAY/PAUSE LOGIC --- */
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('play-icon').classList.toggle('hidden');
+            document.getElementById('pause-icon').classList.toggle('hidden');
+            const music = document.getElementById('bg-music');
+            if (isPlaying) {
+                progressStartTime = Date.now() - (progressPercent / 100 * SCENE_DURATION);
+                timerLoop();
+                music.play();
+            } else {
+                music.pause();
+            }
+        }
+
+        /* --- MUTE/UNMUTE LOGIC --- */
+        function toggleMute() {
+            const music = document.getElementById('bg-music');
+            const mainBtn = document.getElementById('mute-btn');
+            const notesBtn = document.getElementById('notes-mute-btn');
+
+            isMuted = !isMuted;
+            music.muted = isMuted;
+
+            const icon = isMuted ? '🔇' : '🔈';
+            if (mainBtn) mainBtn.textContent = icon;
+            if (notesBtn) notesBtn.textContent = icon;
+        }
+
+
+
+        /* --- LIVE BACKGROUND LOGIC --- */
+        function spawnNebulae() {
+            function makeCloud() {
+                const c = document.createElement('div');
+                c.className = 'nebula-cloud';
+                const size = 800 + Math.random() * 1000;
+                c.style.width = `${size}px`;
+                c.style.height = `${size / 1.5}px`;
+                c.style.left = `${Math.random() * 100 - 30}%`;
+                c.style.top = `${Math.random() * 100 - 30}%`;
+                // ensure visible stacking above the base star-field but below UI
+                c.style.zIndex = '1';
+                document.body.appendChild(c);
+                c.animate([
+                    { opacity: 0, transform: 'scale(0.8) translate(0,0)' },
+                    { opacity: 0.08, offset: 0.5 },
+                    { opacity: 0, transform: 'scale(1.2) translate(150px, 80px)' }
+                ], { duration: 30000 + Math.random() * 20000 }).onfinish = () => c.remove();
+            }
+
+            // spawn one immediately, then periodically
+            makeCloud();
+            setInterval(makeCloud, 10000);
+        }
+    </script>
+</body>
+
+</html>

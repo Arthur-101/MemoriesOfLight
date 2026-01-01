@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sky: Constellations of Memory</title>
+    <!-- Preconnect for faster font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfj-_tfUxmEk6COpVejaPmULkI8PhuOqU",
+            authDomain: "memoriesoflight-8cfa5.firebaseapp.com",
+            projectId: "memoriesoflight-8cfa5",
+            storageBucket: "memoriesoflight-8cfa5.firebasestorage.app",
+            messagingSenderId: "475651062020",
+            appId: "1:475651062020:web:0a53aab37d691e069bf851",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.firestore = { db, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy };
+        window.db = db;
+        window.auth = auth;
+        window.appId = firebaseConfig.appId;
+
+        window.collection = collection;
+        window.query = query;
+        window.orderBy = orderBy;
+        window.addDoc = addDoc;
+        window.onSnapshot = onSnapshot;
+        window.serverTimestamp = serverTimestamp;
+        window.signInAnonymously = signInAnonymously;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.firestoreUtils = { collection, addDoc, onSnapshot, query, serverTimestamp };
+
+        async function initAuth() {
+            await signInAnonymously(auth);
+        }
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.__AUTH_READY__ = true;
+                const btn = document.querySelector('.note-submit-btn');
+                const ta = document.getElementById('note-input');
+                if (btn) btn.disabled = false;
+                if (ta) ta.disabled = false;
+            }
+        });
+    </script>
+
+    <!-- Starfield Module (Optimized) -->
+    <script>
+        (function () {
+            'use strict';
+            const isMobile = window.innerWidth < 768;
+            const STAR_COUNT = isMobile ? 150 : 400; // Optimized count
+            const SHOOTING_STAR_COUNT = isMobile ? 1 : 3;
+            const INTERACTION_RADIUS = isMobile ? 80 : 120;
+
+            let canvas, ctx;
+            let stars = [];
+            let shootingStars = [];
+            let mouse = { x: null, y: null };
+
+            function createCanvas() {
+                canvas = document.createElement('canvas');
+                canvas.id = 'starfield-canvas';
+                canvas.style.cssText = 'position:fixed;inset:0;z-index:1;pointer-events:none;';
+                document.body.insertBefore(canvas, document.body.firstChild);
+                ctx = canvas.getContext('2d');
+                resizeCanvas();
+            }
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                initStars();
+            }
+
+            function initStars() {
+                stars = [];
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        baseX: 0, baseY: 0,
+                        size: Math.random() * (isMobile ? 2.0 : 2.5) + 0.5,
+                        opacity: Math.random(),
+                        pulse: 0.005 + Math.random() * 0.015,
+                        vx: (Math.random() - 0.5) * 0.1,
+                        vy: (Math.random() - 0.5) * 0.1,
+                        r: 240 + Math.floor(Math.random() * 15),
+                        g: 200 + Math.floor(Math.random() * 55),
+                        b: 140 + Math.floor(Math.random() * 115)
+                    });
+                    stars[stars.length - 1].baseX = stars[stars.length - 1].x;
+                    stars[stars.length - 1].baseY = stars[stars.length - 1].y;
+                }
+                shootingStars = [];
+                for (let i = 0; i < SHOOTING_STAR_COUNT; i++) {
+                    shootingStars.push({ x: 0, y: 0, length: 250 + Math.random() * 100, speed: 20 + Math.random() * 15, opacity: 0, active: false });
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (const s of stars) {
+                    s.opacity += s.pulse;
+                    if (s.opacity > 1 || s.opacity < 0.2) s.pulse *= -1;
+
+                    s.baseX += s.vx;
+                    s.baseY += s.vy;
+                    if (s.baseX < 0 || s.baseX > canvas.width) s.vx *= -1;
+                    if (s.baseY < 0 || s.baseY > canvas.height) s.vy *= -1;
+
+                    if (mouse.x !== null) {
+                        const dx = mouse.x - s.x;
+                        const dy = mouse.y - s.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < INTERACTION_RADIUS) {
+                            const force = (INTERACTION_RADIUS - distance) / INTERACTION_RADIUS;
+                            s.x -= (dx / distance) * force * 15;
+                            s.y -= (dy / distance) * force * 15;
+                        }
+                    }
+                    s.x += (s.baseX - s.x) / 15;
+                    s.y += (s.baseY - s.y) / 15;
+
+                    ctx.fillStyle = `rgba(${s.r},${s.g},${s.b},${s.opacity})`;
+                    if (!isMobile) {
+                        ctx.shadowBlur = s.size * 3;
+                        ctx.shadowColor = 'rgba(243,207,142,0.5)';
+                    }
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+
+                for (const ss of shootingStars) {
+                    if (!ss.active) {
+                        if (Math.random() < 0.0005) {
+                            ss.active = true;
+                            ss.x = Math.random() * canvas.width * 0.8;
+                            ss.y = Math.random() * canvas.height * 0.3;
+                            ss.opacity = 1;
+                        }
+                        continue;
+                    }
+                    ss.x += ss.speed;
+                    ss.y += ss.speed * 0.2;
+                    ss.opacity -= 0.008;
+                    if (ss.opacity <= 0) { ss.active = false; continue; }
+
+                    ctx.strokeStyle = `rgba(255,255,255,${ss.opacity})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(ss.x, ss.y);
+                    ctx.lineTo(ss.x - ss.length, ss.y - ss.length * 0.2);
+                    ctx.stroke();
+                }
+                requestAnimationFrame(animate);
+            }
+
+            function init() {
+                createCanvas();
+                window.addEventListener('resize', resizeCanvas);
+                window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+                window.addEventListener('touchmove', (e) => {
+                    mouse.x = e.touches[0].clientX;
+                    mouse.y = e.touches[0].clientY;
+                }, { passive: true });
+                window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+                window.addEventListener('touchend', () => { mouse.x = null; mouse.y = null; });
+                animate();
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+            else init();
+        })();
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@200;400&family=Caveat:wght@400;700&display=swap');
+
+        :root {
+            --sky-gold: #f3cf8e;
+            --sky-blue-deep: #02040a;
+            --sky-white: #ffffff;
+            --transition-speed: 2.5s;
+            --card-border-color: rgba(243, 207, 142, 0.4);
+        }
+
+        body {
+            background-color: var(--sky-blue-deep);
+            color: var(--sky-white);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            perspective: 1500px;
+        }
+
+        .cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .handwritten {
+            font-family: 'Caveat', cursive;
+        }
+
+        #star-field {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, #0a1b33 0%, var(--sky-blue-deep) 100%);
+            z-index: 0;
+        }
+
+        #slideshow-container {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            transform-style: preserve-3d;
+            transition: transform 0.2s ease-out;
+        }
+
+        /* Mobile Scaling for Slideshow */
+        @media (max-width: 768px) {
+            #slideshow-container {
+                /* Scale down whole scene on mobile */
+                zoom: 0.7;
+            }
+        }
+
+        .scene {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transform-style: preserve-3d;
+            transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
+        }
+
+        .scene.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scene.exiting {
+            opacity: 0;
+            transform: translateZ(-800px) rotateX(-20deg);
+            pointer-events: none;
+        }
+
+        @keyframes sceneFloat {
+            0% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-15px) rotate(0.5deg);
+            }
+
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+        }
+
+        @keyframes cardPulse {
+            0% {
+                box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
+            }
+
+            50% {
+                box-shadow: 0 40px 120px rgba(0, 0, 0, 1), 0 0 20px rgba(243, 207, 142, 0.1);
+            }
+
+            100% {
+                box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
+            }
+        }
+
+        .img-card {
+            position: relative;
+            opacity: 0;
+            aspect-ratio: 16 / 9;
+            transform-style: preserve-3d;
+            transform: translateZ(-1000px) rotateX(15deg) translateY(50px);
+            transition: opacity 2.5s ease, transform 3s ease;
+            cursor: pointer;
+            overflow: visible !important;
+        }
+
+        .img-card-inner {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid var(--card-border-color);
+            border-radius: 4px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
+            filter: brightness(0.6) blur(20px);
+            transition: filter 2s ease-out;
+            pointer-events: none;
+            z-index: 1;
+            transform: translateZ(0);
+        }
+
+        .img-card.loaded .img-card-inner {
+            filter: brightness(1) blur(0px);
+        }
+
+        .scene.active .img-card {
+            opacity: 1;
+            transform: translateZ(0) rotateX(0deg) translateY(0);
+            animation: sceneFloat 10s ease-in-out infinite, cardPulse 8s ease-in-out infinite;
+        }
+
+        /* Setup Screen - Responsive */
+        #setup-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 3.5s ease;
+            padding: 1rem;
+        }
+
+        .title-text {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            letter-spacing: 0.4em;
+            line-height: 1.2;
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #f3cf8e;
+            opacity: 0.8;
+            font-family: 'Cinzel', serif;
+        }
+
+        .subtitle-text {
+            font-size: 9px;
+            letter-spacing: 1.2em;
+            text-transform: uppercase;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.2);
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .start-btn {
+            padding: 1rem 3rem;
+            border: 1px solid #f3cf8e;
+            color: #f3cf8e;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.6em;
+            font-size: 10px;
+            background: rgba(243, 207, 142, 0.05);
+            /* Larger tap target area */
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .start-btn:hover {
+            background: rgba(243, 207, 142, 0.1);
+        }
+
+        /* Notes Page - Responsive Grid */
+        #final-note-scene {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 5vh;
+            background: radial-gradient(circle at 50% 50%, #1a2a44 0%, #02040a 100%);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        #final-note-scene::-webkit-scrollbar {
+            display: none;
+        }
+
+        .note-input-container {
+            width: 90%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(243, 207, 142, 0.2);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            z-index: 10;
+        }
+
+        .memory-wall {
+            width: 95%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            padding-bottom: 10vh;
+        }
+
+        @media (max-width: 640px) {
+            .memory-wall {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.8rem;
+            }
+
+            .memory-card {
+                padding: 1rem;
+            }
+
+            .memory-text {
+                font-size: 14px;
+            }
+
+            .title-text {
+                letter-spacing: 0.2em;
+            }
+        }
+
+        .memory-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(243, 207, 142, 0.1);
+            padding: 1.5rem;
+            border-radius: 4px;
+            position: relative;
+            animation: fadeIn 2s ease-out forwards;
+            transition: all 0.4s ease;
+        }
+
+        .memory-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(243, 207, 142, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .memory-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(243, 207, 142, 0.05) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .memory-card:hover::after {
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .memory-text {
+            font-family: 'Caveat', cursive;
+            font-size: 18px;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .memory-author {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            color: var(--sky-gold);
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+        }
+
+        .memory-time {
+            font-family: 'Inter', sans-serif;
+            font-size: 8px;
+            color: var(--sky-gold);
+            opacity: 0.3;
+            margin-top: 1rem;
+            text-transform: uppercase;
+        }
+
+        .notes-mute-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 200;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(243, 207, 142, 0.2);
+            backdrop-filter: blur(5px);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .note-name-input,
+        .note-textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(243, 207, 142, 0.2);
+            color: var(--sky-gold);
+            outline: none;
+            text-align: center;
+        }
+
+        .note-name-input {
+            margin-top: 1rem;
+            padding: 0.5rem;
+        }
+
+        .note-textarea {
+            margin-top: 1rem;
+            height: 80px;
+            resize: none;
+            color: white;
+        }
+
+        .overlay-ui {
+            position: relative;
+            z-index: 200;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            pointer-events: none;
+        }
+
+        .overlay-ui * {
+            pointer-events: auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #bloom-overlay {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            mix-blend-mode: soft-light;
+        }
+
+        .bloom-active {
+            animation: bloomEffect 3s ease-out;
+        }
+
+        @keyframes bloomEffect {
+            0% {
+                opacity: 0;
+            }
+
+            40% {
+                opacity: 0.4;
+                filter: blur(40px);
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(243, 207, 142, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 12px;
+            border-radius: 50%;
+            transition: all 0.3s;
+            cursor: pointer;
+            opacity: 0.4;
+        }
+
+        .nav-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            width: 100%;
+            z-index: 210;
+            background: rgba(243, 207, 142, 0.05);
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--sky-gold);
+            width: 0%;
+            box-shadow: 0 0 15px var(--sky-gold);
+        }
+
+        /* Extra Props */
+        .nebula-cloud {
+            position: fixed;
+            background: radial-gradient(ellipse at center, rgba(120, 160, 255, 0.15) 0%, transparent 70%);
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .caption-group {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s ease-out 1.5s;
+            transform: translateZ(100px);
+            z-index: 9999;
+            transform-style: preserve-3d;
+        }
+
+        .scene.active .caption-group {
+            opacity: 1;
+        }
+
+        .caption-text {
+            position: absolute;
+            font-size: 24px;
+            color: #ffffff;
+            text-shadow: 0 0 12px black;
+            white-space: nowrap;
+            width: max-content;
+            z-index: 20;
+            transform: translate(-50%, -50%);
+        }
+
+        .flexible-arrow-svg {
+            position: absolute;
+            overflow: visible;
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5));
+            z-index: 10;
+        }
+
+        .arrow-path {
+            stroke: #ffffff;
+            stroke-width: 2.5;
+            fill: none;
+            stroke-dasharray: 250;
+            stroke-dashoffset: 250;
+            animation: drawArrow 1.5s ease-out forwards 1.8s;
+        }
+
+        @keyframes drawArrow {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .prop {
+            position: absolute;
+            pointer-events: none;
+            z-index: 60;
+            filter: drop-shadow(0 0 10px var(--sky-gold));
+            opacity: 0;
+            transition: opacity 2s;
+            transform: translateZ(20px);
+        }
+
+        .scene.active .prop {
+            opacity: 1;
+        }
+
+        .wing-star {
+            width: 18px;
+            height: 18px;
+            background: white;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            animation: pulse-star 3s infinite alternate;
+        }
+
+        @keyframes pulse-star {
+            from {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            to {
+                transform: scale(1.4);
+                opacity: 1;
+            }
+        }
+
+        .tape {
+            position: absolute;
+            width: 80px;
+            height: 24px;
+            background: rgba(243, 207, 142, 0.15);
+            backdrop-filter: blur(4px);
+            z-index: 55;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .tape-tl {
+            top: -12px;
+            left: -20px;
+            transform: rotate(-35deg) translateZ(10px);
+        }
+
+        .tape-tr {
+            top: -12px;
+            right: -20px;
+            transform: rotate(35deg) translateZ(10px);
+        }
+    </style>
+</head>
+
+<body onmousemove="handleGlobalInput(event)" oncontextmenu="return false;">
+
+    <audio id="bg-music" src="bg_music.weba" loop></audio>
+
+    <div id="star-field"></div>
+    <div id="bloom-overlay"></div>
+    <canvas id="nebula-canvas"
+        style="position:fixed;left:0;top:0;width:100%;height:100%;z-index:1;opacity:0.9;pointer-events:none;"></canvas>
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen">
+        <div class="text-center">
+            <h1 class="title-text">
+                Memories of Light
+            </h1>
+            <p class="subtitle-text">
+                Shared moments within the clouds
+            </p>
+            <div class="flex flex-col items-center space-y-6">
+                <button onclick="beginJourney()" class="start-btn">BEGIN</button>
+                <button onclick="showFinalNotePage()"
+                    class="text-[10px] tracking-[0.4em] opacity-50 hover:opacity-100 transition p-4">NOTES</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="slideshow-container"></div>
+
+    <!-- FINAL MEMORY PAGE -->
+    <div id="final-note-scene">
+        <button onclick="toggleMute()" id="notes-mute-btn" class="notes-mute-btn">🔈</button>
+        <div class="note-input-container">
+            <h2 class="cinzel text-xl text-[#f3cf8e] tracking-[0.4em] mb-2">Leave a Memory</h2>
+            <p class="text-[9px] uppercase tracking-[0.2em] opacity-40">Your words will drift among the stars</p>
+            <input type="text" id="name-input" class="note-name-input" placeholder="Your name (optional)"
+                maxlength="30">
+            <textarea id="note-input" class="note-textarea" placeholder="Write something..."></textarea>
+            <div id="statusMessage" class="text-xs opacity-40 mt-2"></div>
+            <button onclick="window.sendNote()" class="note-submit-btn">SEND TO THE SKY</button>
+        </div>
+        <button onclick="window.location.reload()"
+            class="mb-6 mt-2 text-[10px] tracking-[0.4em] opacity-50 hover:opacity-100 transition border border-[#f3cf8e]/30 px-6 py-2 hover:border-[#f3cf8e]">
+            ↻ RESTART
+        </button>
+        <div id="notesContainer" class="memory-wall"></div>
+    </div>
+
+    <!-- UI OVERLAY -->
+    <div id="ui-overlay" class="overlay-ui opacity-0 transition-opacity duration-1000">
+        <div class="flex justify-between items-start">
+            <div class="cinzel text-[#f3cf8e] space-y-1">
+                <div class="text-[10px] tracking-[0.6em] uppercase opacity-30">Constellation</div>
+                <div id="image-counter" class="text-lg tracking-[0.2em]">000 / 122</div>
+            </div>
+            <div class="flex flex-col items-center space-y-2">
+                <button onclick="togglePlay()" class="opacity-60 hover:opacity-100 p-2">
+                    <div id="pause-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                            <rect x="4" y="4" width="4" height="16" />
+                            <rect x="16" y="4" width="4" height="16" />
+                        </svg></div>
+                    <div id="play-icon" class="hidden"><svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                            <polygon points="5,3 19,12 5,21" />
+                        </svg></div>
+                </button>
+                <button onclick="toggleMute()" id="mute-btn"
+                    class="opacity-60 hover:opacity-100 text-sm p-2">🔈</button>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between w-full">
+            <button onclick="navigatePrev()" class="nav-btn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="white" stroke-width="1.5">
+                    <path d="M15 18l-6-6 6-6" />
+                </svg></button>
+            <button onclick="window.showFinalNotePage()" class="nav-btn text-[10px] tracking-widest px-4">SKIP</button>
+            <button onclick="navigateNext()" class="nav-btn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="white" stroke-width="1.5">
+                    <path d="M9 18l6-6-6-6" />
+                </svg></button>
+        </div>
+    </div>
+    <div class="progress-bar">
+        <div id="progress-fill"></div>
+    </div>
+
+    <script>
+        // CONFIG
+        const IMAGE_FOLDER = 'Images';
+        const TOTAL_IMAGES = 122;
+        const SCENE_DURATION = 8000;
+
+        // STATE
+        let isPlaying = false;
+        let isMuted = false;
+        let currentIndex = 0;
+        let imagesShown = 0;
+        let progressStartTime = 0;
+        let progressPercent = 0;
+        let isTransitioning = false;
+        let isLightboxOpen = false;
+        const interaction = { x: null, y: null };
+
+        const CAPTIONS = {
+            1: "20/11/2024 \n What you finding lady???",
+            2: "21/11/2024 \n I am strong!! (❁´◡`❁)",
+            4: "27/11/2024 \n I am a fairy~",
+            6: "27/11/2024 \n I present to you- My Shaylaaa",
+            7: "27/11/2024 \n Uhhh... what're we doing?",
+            9: "1/12/2024 \n Two moons 🥰",
+            11: "15/1/2025",
+            16: "26/1/2025 \n Miss Pianist",
+            18: "27/1/2025 \n The three Musketeers",
+            20: "27/1/2025 \n Is she upset??",
+            22: "27/1/2025 \n Kucchu pucchu 😭😭",
+            26: "27/1/2025 \n Look at me!! I can flyyyy",
+            29: "3/2/2025 \n Don't mess with us 😤",
+            33: "7/3/2025 \n Remember Meeru's Birthday???",
+            35: "16/3/2025 \n It's Our first end realm together?",
+            37: "25/3/2025 \n 'I am a strong Girl!! ヽ（≧□≦）ノ'",
+            40: "25/3/2025 \n Ik ik, i am so charming,\nshe can't stop looking at me",
+            43: "27/3/2025 \n My Sleeping Beauty...",
+            45: "29/3/2025 \n LOOK AT THE CAMERA 😬",
+            47: "3/4/2025 \n Butterflies in their natural \nenvironment 🤭",
+            49: "3/4/2025 \n I swear she is not drunk...",
+            51: "4/4/2025 \n Mwah",
+            52: "4/4/2025 \n mwah x2",
+            54: "15/4/2025 \n My Birthdayyyy!",
+            56: "Dancers",
+            57: "16/4/2025",
+            60: "8/5/2025 \n It's Washu's Birthday!",
+            61: "🤤🤤🤤",
+            62: "8/5/2025 \n Washu: 'What's she doing?\nLia: 'Pata nhi...'",
+            64: "8/5/2025 \n Yeyyyyyyyyyy",
+            66: "8/5/2025 \n Shhhhh... She doesn't see me",
+            67: "🤭🤭🤭",
+            69: "20/5/2025",
+            71: "23/5/2025",
+            73: "23/5/2025 \n Best selfie",
+            77: "29/5/2025 \n Looks like i am vloging 😭😭",
+            78: "2/6/2025 \n (She thinks i don't see her)",
+            79: "3/6/2025 \n Slayyyyy girls!",
+            80: "3/6/2025 \n Boss Girlies 💅✨✨",
+            81: "3/6/2025 \n Literally the next K-pop idols",
+            82: "3/6/2025 \n and ME!",
+            86: "5/6/2025 \n I watch everything from shadows...",
+            88: "20/6/2025",
+            89: "20/6/2025 \n I Tried my best for \ncinematic shot...",
+            92: "20/6/2025 \n Models",
+            95: "20/6/2025 \n Panchhi banu 🕊️, urte chalu",
+            97: "20/6/2025",
+            98: "9/7/2025 \n My Bauni 😘😘😘",
+            101: "1/9/2025",
+            103: "1/9/2025",
+            105: "20/9/2025 \n We Completed the End realm \ntogether!!",
+            108: "20/9/2025 \n My Angel 🥰🥰🥰",
+            110: "25/10/2025 \n This was Lia's Birthdayyy",
+            113: "25/10/2025 \n Photoshoot time",
+            120: "27/11/2025 \n Titanic Ahhhh Pose!!",
+            122: "30/12/2025 \n and lastly, We became snowman..."
+        };
+
+        function handleGlobalInput(e) {
+            // Optimization: Throttled input
+            requestAnimationFrame(() => {
+                if (e.touches) {
+                    interaction.x = e.touches[0].clientX;
+                    interaction.y = e.touches[0].clientY;
+                } else {
+                    interaction.x = e.clientX;
+                    interaction.y = e.clientY;
+                }
+                if (!isPlaying || window.innerWidth < 768) return;
+                const x = (interaction.x - window.innerWidth / 2) / 80;
+                const y = (interaction.y - window.innerHeight / 2) / 80;
+                const container = document.getElementById('slideshow-container');
+                if (container) container.style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
+            });
+        }
+        window.addEventListener('touchmove', handleGlobalInput, { passive: true });
+
+        function beginJourney() {
+            const setup = document.getElementById('setup-screen');
+            setup.style.opacity = '0';
+            setup.style.transform = 'translateZ(-300px) translateY(-50px)';
+            isPlaying = true;
+            const music = document.getElementById('bg-music');
+            music.volume = 0.7;
+            music.play().catch(e => console.log("Audio req interaction"));
+            setTimeout(() => {
+                setup.classList.add('hidden');
+                document.getElementById('ui-overlay').classList.remove('opacity-0');
+                startSlideshow();
+            }, 3500);
+        }
+
+        function startSlideshow() {
+            showNext();
+            progressStartTime = Date.now();
+            requestAnimationFrame(timerLoop);
+            // Spawn nebula less frequently or checked 
+            spawnNebulae();
+        }
+
+        function timerLoop() {
+            if (!isPlaying || isLightboxOpen) return;
+            const now = Date.now();
+            const elapsed = now - progressStartTime;
+            progressPercent = (elapsed / SCENE_DURATION) * 100;
+            const bar = document.getElementById('progress-fill');
+            if (bar) bar.style.width = `${progressPercent}%`;
+            if (elapsed >= SCENE_DURATION) {
+                showNext();
+                progressStartTime = Date.now();
+                progressPercent = 0;
+            }
+            requestAnimationFrame(timerLoop);
+        }
+
+        function showNext() {
+            if (isTransitioning) return;
+            if (imagesShown >= TOTAL_IMAGES) {
+                showFinalNotePage();
+                return;
+            }
+            isTransitioning = true;
+            // Clear old scenes
+            document.querySelectorAll('.scene.exiting').forEach(el => el.remove());
+            document.querySelectorAll('.scene.active').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('exiting');
+            });
+
+            // Bloom
+            const bloom = document.getElementById('bloom-overlay');
+            bloom.classList.remove('bloom-active');
+            void bloom.offsetWidth;
+            bloom.classList.add('bloom-active');
+
+            // Layout Selection
+            const layouts = [Layouts.pyramid, Layouts.tiltedSpread, Layouts.temple];
+            // Occasional constellation
+            if (Math.random() > 0.8) layouts.push(Math.random() > 0.5 ? Layouts.constellationCircle : Layouts.constellationZigzag);
+
+            const nextLayout = layouts[Math.floor(Math.random() * layouts.length)];
+            const scene = nextLayout();
+
+            document.getElementById('slideshow-container').appendChild(scene);
+            // Wait for bloom
+            setTimeout(() => {
+                scene.classList.add('active');
+                isTransitioning = false;
+                updateCounter();
+            }, 1200);
+        }
+
+        function updateCounter() {
+            const ctr = document.getElementById('image-counter');
+            if (ctr) ctr.innerText = `${String(Math.min(imagesShown, TOTAL_IMAGES)).padStart(3, '0')} / ${TOTAL_IMAGES}`;
+        }
+
+        function getNextImageData() {
+            currentIndex = (currentIndex + 1) % TOTAL_IMAGES;
+            const fileIndex = currentIndex === 0 ? TOTAL_IMAGES : currentIndex;
+            imagesShown++;
+            return { url: `${IMAGE_FOLDER}/${fileIndex}.jpg`, index: fileIndex };
+        }
+
+        function addProp(parent, type, style = {}) {
+            const prop = document.createElement('div');
+            prop.className = `prop ${type}`;
+            Object.assign(prop.style, style);
+            parent.appendChild(prop);
+        }
+
+        function createScene(extraClass = '') {
+            const el = document.createElement('div');
+            el.className = `scene ${extraClass}`;
+            return el;
+        }
+
+        function createCard(imageData) {
+            const card = document.createElement('div');
+            card.className = 'img-card';
+            const inner = document.createElement('div');
+            inner.className = 'img-card-inner';
+            card.appendChild(inner);
+            const img = new Image();
+            img.src = imageData.url;
+            img.onload = () => {
+                inner.style.backgroundImage = `url('${imageData.url}')`;
+                card.classList.add('loaded');
+            };
+            // Optional: Lightbox can be added back if needed, but keeping it simple for now
+            // card.onclick = () => openLightbox(imageData.url);
+            if (CAPTIONS[imageData.index]) createFlexibleCaption(card, CAPTIONS[imageData.index]);
+            return card;
+        }
+
+        function createFlexibleCaption(card, text) {
+            const group = document.createElement('div');
+            group.className = 'caption-group';
+            const angle = Math.random() * Math.PI * 2;
+            const distText = 100 + Math.random() * 80;
+            const tx = Math.cos(angle) * distText;
+            const ty = Math.sin(angle) * distText;
+
+            const caption = document.createElement('div');
+            caption.className = 'caption-text handwritten';
+            caption.innerText = text;
+            caption.style.left = '50%'; caption.style.top = '50%';
+            caption.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+
+            group.appendChild(caption);
+            card.appendChild(group);
+        }
+
+        const Layouts = {
+            pyramid: () => {
+                const scene = createScene();
+                const spots = [{ w: '30vw', t: '15%', l: '18%', d: '0s' }, { w: '30vw', t: '15%', l: '52%', d: '0.4s' }, { w: '35vw', t: '50%', l: '32.5%', d: '0.8s' }];
+                spots.forEach((s, i) => {
+                    const data = getNextImageData();
+                    const img = createCard(data);
+                    img.classList.add('absolute');
+                    img.style.width = s.w; img.style.top = s.t; img.style.left = s.l; img.style.transitionDelay = s.d;
+                    const tape = document.createElement('div');
+                    tape.className = Math.random() > 0.5 ? 'tape tape-tl' : 'tape tape-tr';
+                    img.appendChild(tape);
+                    if (i === 2) addProp(img, 'spirit-bell', { top: '-50px', left: '50%' });
+                    scene.appendChild(img);
+                });
+                return scene;
+            },
+            tiltedSpread: () => {
+                const scene = createScene();
+                const spots = [{ w: '26vw', t: '12%', l: '10%', r: '-8deg', d: '0s' }, { w: '28vw', t: '8%', l: '42%', r: '4deg', d: '0.3s' }, { w: '27vw', t: '48%', l: '15%', r: '2deg', d: '0.6s' }, { w: '30vw', t: '52%', l: '55%', r: '-6deg', d: '0.9s' }];
+                spots.forEach(s => {
+                    const data = getNextImageData();
+                    const img = createCard(data);
+                    img.classList.add('absolute');
+                    img.style.width = s.w; img.style.top = s.t; img.style.left = s.l; img.style.transform = `rotate(${s.r})`; img.style.transitionDelay = s.d;
+                    scene.appendChild(img);
+                });
+                return scene;
+            },
+            temple: () => {
+                const scene = createScene('flex items-end gap-8 pb-32');
+                const specs = [{ h: '35vh', w: '20vw', d: '0.6s' }, { h: '65vh', w: '38vw', d: '0s' }, { h: '35vh', w: '20vw', d: '0.6s' }];
+                specs.forEach((s, i) => {
+                    const data = getNextImageData();
+                    const img = createCard(data);
+                    img.classList.add('kb-zoom-out');
+                    img.style.height = s.h; img.style.width = s.w; img.style.transitionDelay = s.d;
+                    scene.appendChild(img);
+                });
+                return scene;
+            },
+            constellationCircle: () => createConstellation('circle'),
+            constellationZigzag: () => createConstellation('zigzag')
+        };
+
+        function createConstellation(type) {
+            const scene = createScene();
+            const wrapper = document.createElement('div');
+            wrapper.className = 'constellation-wrapper';
+            scene.appendChild(wrapper);
+            const count = 5;
+            for (let i = 0; i < count; i++) {
+                const x = type === 'circle' ? (40 + Math.cos((i / count) * Math.PI * 2 - Math.PI / 2) * 28) : (5 + i * 17.5);
+                const y = type === 'circle' ? (40 + Math.sin((i / count) * Math.PI * 2 - Math.PI / 2) * 28) : (i % 2 === 0 ? 20 : 60);
+                const data = getNextImageData();
+                const img = createCard(data);
+                img.classList.add('absolute');
+                img.style.width = '26vw'; img.style.top = `${y}%`; img.style.left = `${x}%`;
+                img.style.transform = `translate(-50%, -50%) translateZ(${Math.random() * 60}px)`;
+                wrapper.appendChild(img);
+            }
+            return scene;
+        }
+
+        /* --- NAVIGATION --- */
+        function navigateNext() { progressStartTime = Date.now(); showNext(); }
+        function navigatePrev() {
+            currentIndex = (currentIndex - 2 + TOTAL_IMAGES) % TOTAL_IMAGES;
+            progressStartTime = Date.now(); showNext();
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('play-icon').classList.toggle('hidden');
+            document.getElementById('pause-icon').classList.toggle('hidden');
+            const m = document.getElementById('bg-music');
+            isPlaying ? m.play() : m.pause();
+            if (isPlaying) { progressStartTime = Date.now(); requestAnimationFrame(timerLoop); }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('bg-music').muted = isMuted;
+            const icon = isMuted ? '🔇' : '🔈';
+            const m1 = document.getElementById('mute-btn');
+            const m2 = document.getElementById('notes-mute-btn');
+            if (m1) m1.textContent = icon;
+            if (m2) m2.textContent = icon;
+        }
+
+        window.showFinalNotePage = function () {
+            isPlaying = false;
+            const setup = document.getElementById('setup-screen');
+            if (setup) setup.style.display = 'none';
+            document.getElementById('ui-overlay').classList.add('opacity-0');
+            document.getElementById('ui-overlay').style.pointerEvents = 'none';
+            document.getElementById('final-note-scene').style.display = 'flex';
+        };
+
+        window.sendNote = async () => {
+            const text = document.getElementById('note-input').value.trim();
+            const author = document.getElementById('name-input').value.trim() || "Anonymous Traveler";
+            if (!text) return;
+            try {
+                await window.addDoc(window.collection(window.db, "notes"), {
+                    text, author, timestamp: window.serverTimestamp()
+                });
+                document.getElementById('note-input').value = "";
+                document.getElementById('statusMessage').textContent = "Sent to the stars ✨";
+            } catch (e) { console.error(e); }
+        };
+
+        function initNotesListener() {
+            if (!window.db) { setTimeout(initNotesListener, 500); return; }
+            window.onSnapshot(window.query(window.collection(window.db, "notes"), window.orderBy('timestamp', 'desc')), snap => {
+                const wall = document.getElementById('notesContainer');
+                if (!wall) return;
+                wall.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const el = document.createElement('div');
+                    el.className = 'memory-card';
+                    el.innerHTML = `
+                        <div class='memory-author'>${d.author || 'Anonymous'}</div>
+                        <div class='memory-text'>${d.text}</div>
+                        <div class='memory-time'>${d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleDateString() : 'Now'}</div>
+                    `;
+                    wall.appendChild(el);
+                });
+            });
+        }
+        initNotesListener();
+
+        function spawnNebulae() {
+            const c = document.createElement('div');
+            c.className = 'nebula-cloud';
+            const size = 800 + Math.random() * 1000;
+            c.style.width = `${size}px`; c.style.height = `${size / 1.5}px`;
+            c.style.left = `${Math.random() * 100 - 30}%`; c.style.top = `${Math.random() * 100 - 30}%`;
+            document.body.appendChild(c);
+            c.animate([
+                { opacity: 0, transform: 'scale(0.8) translate(0,0)' },
+                { opacity: 0.08, offset: 0.5 },
+                { opacity: 0, transform: 'scale(1.2) translate(150px, 80px)' }
+            ], { duration: 30000 + Math.random() * 20000 }).onfinish = () => c.remove();
+
+            // Recursively spawn
+            setTimeout(spawnNebulae, 10000);
+        }
+    </script>
+</body>
+
+</html>

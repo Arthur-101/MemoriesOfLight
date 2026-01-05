@@ -1,7 +1,7 @@
 # ✨ Memories of Light
 ### Sky: Constellations of Memory
 
-![Banner Image](https://via.placeholder.com/1200x400?text=Memories+of+Light+Banner) <!-- Replace with an actual screenshot of your starfield -->
+![Banner Image]([https://via.placeholder.com/1200x400?text=Memories+of+Light+Banner](https://github.com/Arthur-101/MemoriesOfLight/blob/main/banner.png)) <!-- Replace with an actual screenshot of your starfield -->
 
 > *"A digital sanctuary to preserve the fleeting moments of our journey through the clouds."*
 
@@ -77,3 +77,4 @@ You need a modern web browser to view this project. No server installations are 
 <p align="center">
   Made with ❤️ by <a href="https://github.com/yourusername">Your Name</a>
 </p>
+

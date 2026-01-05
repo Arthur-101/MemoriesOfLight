@@ -1,4 +1,4 @@
-# ✨ Memories of Light
+# Memories of Light
 ### Sky: Constellations of Memory
 
 > *https://memoriesoflight-8cfa5.web.app/*
@@ -7,7 +7,7 @@
 
 ---
 
-## 🌟 Features
+## Features
 
 -   **Interactive Starfield**: A responsive, parallax starfield background that reacts to mouse movement and touch, creating a sense of depth and flight.
 -   **Collective Memory Wall**: A shared space where users can submit and view notes stored in real-time.
@@ -15,14 +15,14 @@
 -   **Responsive Design**: Fully optimized for both desktop and mobile devices, ensuring a seamless experience across all screen sizes.
 -   **Firebase Integration**: Real-time database interactions using Firestore and anonymous authentication for frictionless user contributions.
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 -   **Frontend**: HTML5, Vanilla JavaScript, Tailwind CSS
 -   **Styling**: Custom CSS animations, Glassmorphism UI
 -   **Fonts**: Google Fonts (Cinzel, Inter, Caveat, Cormorant Garamond)
 -   **Backend**: Firebase (Firestore, Authentication)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -54,7 +54,7 @@ You need a modern web browser to view this project. No server installations are 
     ```
     Open your browser to `http://localhost:3000`.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── Images/              # Assets for galleries and UI
@@ -64,7 +64,7 @@ You need a modern web browser to view this project. No server installations are 
 └── README.md            # Project documentation
 ```
 
-## 🎨 Credits
+## Credits
 
 -   **Design Inspiration**: *Sky: Children of the Light* by thatgamecompany.
 -   **Fonts**: Google Fonts.
@@ -75,5 +75,6 @@ You need a modern web browser to view this project. No server installations are 
 <p align="center">
   Made with ❤️ by <a href="https://github.com/yourusername">Your Name</a>
 </p>
+
 
 

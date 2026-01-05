@@ -72,9 +72,7 @@ You need a modern web browser to view this project. No server installations are 
 
 ---
 
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/yourusername">Your Name</a>
-</p>
+
 
 
 

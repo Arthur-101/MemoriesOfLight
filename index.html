@@ -8,6 +8,9 @@
     <!-- Preconnect for faster font loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@0;1&family=Playfair+Display:ital@0;1&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Firebase SDKs -->
@@ -16,14 +19,7 @@
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCfj-_tfUxmEk6COpVejaPmULkI8PhuOqU",
-            authDomain: "memoriesoflight-8cfa5.firebaseapp.com",
-            projectId: "memoriesoflight-8cfa5",
-            storageBucket: "memoriesoflight-8cfa5.firebasestorage.app",
-            messagingSenderId: "475651062020",
-            appId: "1:475651062020:web:0a53aab37d691e069bf851",
-        };
+        import { firebaseConfig } from "./firebase-config.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -358,11 +354,12 @@
         }
 
         .subtitle-text {
-            font-size: 9px;
+            font-size: 12px;
             letter-spacing: 1.2em;
             text-transform: uppercase;
-            font-weight: 300;
+            font-weight: 400;
             color: rgba(255, 255, 255, 0.2);
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.15);
             text-align: center;
             margin-bottom: 4rem;
         }
@@ -382,6 +379,27 @@
 
         .start-btn:hover {
             background: rgba(243, 207, 142, 0.1);
+        }
+
+        .note-submit-btn {
+            margin-top: 2rem;
+            align-self: center;
+            padding: 1rem 3rem;
+            border: 1px solid var(--sky-gold);
+            color: var(--sky-gold);
+            background: rgba(243, 207, 142, 0.05);
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.4em;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .note-submit-btn:hover {
+            background: rgba(243, 207, 142, 0.15);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(243, 207, 142, 0.2);
         }
 
         /* Notes Page - Responsive Grid */
@@ -404,6 +422,10 @@
         }
 
         .note-input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
             width: 90%;
             max-width: 600px;
             background: rgba(255, 255, 255, 0.03);
@@ -426,8 +448,10 @@
 
         @media (max-width: 640px) {
             .memory-wall {
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 0.8rem;
+                grid-template-columns: 1fr !important;
+                gap: 1.5rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
             }
 
             .memory-card {
@@ -441,6 +465,23 @@
             .title-text {
                 letter-spacing: 0.2em;
             }
+
+            /* Optimization: Smaller arrows/text on mobile */
+            .caption-text {
+                font-size: 14px !important;
+            }
+
+            .flexible-arrow-svg {
+                transform: scale(0.6);
+                transform-origin: top left;
+            }
+
+            /* Scale down slideshow container for better fit */
+            /* Scale down slideshow container for better fit */
+            /* Removed zoom as it causes off-centering */
+
+
+            /* Reset zoom, handle via layout */
         }
 
         .memory-card {
@@ -540,6 +581,10 @@
         .note-name-input {
             margin-top: 1rem;
             padding: 0.5rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 0.9rem;
+            letter-spacing: 0.08em;
+            text-align: center;
         }
 
         .note-textarea {
@@ -547,16 +592,24 @@
             height: 80px;
             resize: none;
             color: white;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1rem;
+            letter-spacing: 0.06em;
+            line-height: 1.6;
+            text-align: center;
         }
 
         .overlay-ui {
             position: relative;
             z-index: 200;
             height: 100vh;
+            /* Mobile fallback and dynamic viewport height */
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 2rem;
+            padding: 1.5rem;
+            /* Reduced padding for mobile */
             pointer-events: none;
         }
 
@@ -814,14 +867,15 @@
             </div>
         </div>
 
-        <div class="flex items-center justify-between w-full">
-            <button onclick="navigatePrev()" class="nav-btn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="white" stroke-width="1.5">
+        <div class="flex items-center justify-between w-full pb-8 md:pb-0">
+            <button onclick="navigatePrev()" class="nav-btn p-4"><svg width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="white" stroke-width="1.5">
                     <path d="M15 18l-6-6 6-6" />
                 </svg></button>
-            <button onclick="window.showFinalNotePage()" class="nav-btn text-[10px] tracking-widest px-4">SKIP</button>
-            <button onclick="navigateNext()" class="nav-btn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="white" stroke-width="1.5">
+            <button onclick="window.showFinalNotePage()"
+                class="nav-btn text-[10px] tracking-widest px-6 py-4">SKIP</button>
+            <button onclick="navigateNext()" class="nav-btn p-4"><svg width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="white" stroke-width="1.5">
                     <path d="M9 18l6-6-6-6" />
                 </svg></button>
         </div>
@@ -835,6 +889,7 @@
         const IMAGE_FOLDER = 'Images';
         const TOTAL_IMAGES = 122;
         const SCENE_DURATION = 8000;
+        const isMobile = window.innerWidth < 768;
 
         // STATE
         let isPlaying = false;
@@ -984,14 +1039,20 @@
             bloom.classList.add('bloom-active');
 
             // Layout Selection
-            const layouts = [Layouts.pyramid, Layouts.tiltedSpread, Layouts.temple];
-            // Occasional constellation
-            if (Math.random() > 0.8) layouts.push(Math.random() > 0.5 ? Layouts.constellationCircle : Layouts.constellationZigzag);
+            let nextLayout;
+            if (isMobile) {
+                const mobileLayouts = [Layouts.mobileStack, Layouts.mobileCentered];
+                nextLayout = mobileLayouts[Math.floor(Math.random() * mobileLayouts.length)];
+            } else {
+                const layouts = [Layouts.pyramid, Layouts.tiltedSpread, Layouts.temple];
+                if (Math.random() > 0.8) layouts.push(Math.random() > 0.5 ? Layouts.constellationCircle : Layouts.constellationZigzag);
+                nextLayout = layouts[Math.floor(Math.random() * layouts.length)];
+            }
 
-            const nextLayout = layouts[Math.floor(Math.random() * layouts.length)];
             const scene = nextLayout();
+            const container = document.getElementById('slideshow-container');
+            if (container) container.appendChild(scene);
 
-            document.getElementById('slideshow-container').appendChild(scene);
             // Wait for bloom
             setTimeout(() => {
                 scene.classList.add('active');
@@ -1103,7 +1164,63 @@
                 return scene;
             },
             constellationCircle: () => createConstellation('circle'),
-            constellationZigzag: () => createConstellation('zigzag')
+            constellationZigzag: () => createConstellation('zigzag'),
+
+            mobileCentered: () => {
+                const scene = createScene();
+                const data = getNextImageData();
+                const img = createCard(data);
+                img.classList.add('absolute');
+                // Large centered image for mobile
+                img.style.width = '90vw';
+                img.style.left = '0';
+                img.style.right = '0';
+                img.style.margin = 'auto';
+                img.style.top = '40%';
+                // Removed translateX(-50%) as we use margin:auto for horizontal centering
+                img.style.transform = 'translateY(-50%) translateZ(20px)';
+
+                // Add props
+                addProp(img, 'wing-star', { top: '-10px', right: '10%' });
+                const tape = document.createElement('div');
+                tape.className = Math.random() > 0.5 ? 'tape tape-tl' : 'tape tape-tr';
+                img.appendChild(tape);
+
+                scene.appendChild(img);
+                return scene;
+            },
+
+            mobileStack: () => {
+                const scene = createScene();
+                // Vertical Double Layout (User Design)
+                const spots = [
+                    { w: '90vw', t: '25%', r: '0deg', z: 0 },
+                    { w: '90vw', t: '60%', r: '0deg', z: 0 }
+                ];
+                spots.forEach(s => {
+                    const data = getNextImageData();
+                    const img = createCard(data);
+                    img.classList.add('absolute');
+                    img.style.width = s.w;
+
+                    // Robust Centering
+                    img.style.left = '0';
+                    img.style.right = '0';
+                    img.style.margin = 'auto';
+
+                    img.style.top = s.t;
+                    img.style.transform = `translateY(-50%) rotate(${s.r}) translateZ(${s.z}px)`;
+
+                    const tape = document.createElement('div');
+                    tape.className = Math.random() > 0.5 ? 'tape tape-tl' : 'tape tape-tr';
+                    img.appendChild(tape);
+
+                    scene.appendChild(img);
+                });
+                return scene;
+            }
+
+
         };
 
         function createConstellation(type) {
@@ -1124,6 +1241,8 @@
             }
             return scene;
         }
+
+
 
         /* --- NAVIGATION --- */
         function navigateNext() { progressStartTime = Date.now(); showNext(); }
